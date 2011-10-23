@@ -9,11 +9,14 @@ from fuse import FUSE
 import callbackfs
 
 class Crusher(callbackfs.callback):
+	enqueue = False
+	crushingProcess = threading.RLock()
 	def getCrushPath(self):
 		return self.getPath() + '.crush'
 	def getArguments(self):
 		return None
 	def crush(self, attempt=0):
+		print('Crushing', self.getPath())
 		if attempt > 5:
 			try:
 				os.remove(self.getCrushPath())
@@ -30,9 +33,16 @@ class Crusher(callbackfs.callback):
 			return self.crush(attempt + 1)
 		os.remove(self.getPath())
 		shutil.move(self.getCrushPath(), self.getPath())
+		print('Successful crush of', self.getPath())
 		return True
 	def close(self):
-		threading.Thread(target=self.crush).start()
+		thr = threading.Thread(target=self.crush)
+		if Crusher.enqueue:
+			Crusher.crushingProcess.acquire()
+			thr.run()
+			Crusher.crushingProcess.release()
+		else:
+			thr.start()
 		return None
 
 class PNGCrusher(Crusher):
@@ -47,12 +57,18 @@ class JPEGCrusher(Crusher):
 
 class crushfs(callbackfs.callbackfs):
 	def __init__(self, *args, **kwargs):
+		Crusher.enqueue = 'enqueue' in kwargs and kwargs['enqueue']
+		if 'enqueue' in kwargs:
+			del kwargs['enqueue']
 		super().__init__(*args, **kwargs)
 		self.addCallback(r'\.png$', PNGCrusher)
 		self.addCallback(r'\.jpe?g$', JPEGCrusher)
 
 if __name__ == '__main__':
-	if len(sys.argv) != 3:
-		print('usage: %s <backing directory> <mountpoint>' % sys.argv[0])
+	if len(sys.argv) not in (3, 4):
+		print('usage: %s [--enqueue] <backing directory> <mountpoint>' % sys.argv[0])
 		sys.exit(1)
-	FUSE(crushfs(sys.argv[1]), sys.argv[2], foreground=True)
+	enqueue = '--enqueue' in sys.argv
+	if enqueue:
+		sys.argv.remove('--enqueue')
+	FUSE(crushfs(sys.argv[1], enqueue=enqueue), sys.argv[2], foreground=True)
