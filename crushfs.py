@@ -41,7 +41,10 @@ class Crusher(callbackfs.callback):
 		thr = threading.Thread(target=self.crush)
 		if Crusher.enqueue:
 			Crusher.crushingProcess.acquire()
-			thr.run()
+			try:
+				thr.run()
+			except:
+				print('Error while crushing', self.getPath())
 			Crusher.crushingProcess.release()
 		else:
 			thr.start()
