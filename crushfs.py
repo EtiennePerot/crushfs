@@ -22,6 +22,7 @@ class Crusher(callbackfs.callback):
 				os.remove(self.getCrushPath())
 			except:
 				pass
+			self.clear()
 			return False
 		p = subprocess.Popen(self.getArguments())
 		result = p.wait()
@@ -34,6 +35,7 @@ class Crusher(callbackfs.callback):
 		os.remove(self.getPath())
 		shutil.move(self.getCrushPath(), self.getPath())
 		print('Successful crush of', self.getPath())
+		self.clear()
 		return True
 	def close(self):
 		thr = threading.Thread(target=self.crush)
