@@ -78,7 +78,7 @@ class crushfs(callbackfs.callbackfs):
 		self.addCallback(r'\.jpe?g$', JPEGCrusher)
 
 if __name__ == '__main__':
-	if len(sys.argv) not in (3, 4):
+	if len(sys.argv) < 3:
 		print('usage: %s [--enqueue] <backing directory> <mountpoint>' % sys.argv[0])
 		sys.exit(1)
 	enqueue = '--enqueue' in sys.argv
