@@ -18,7 +18,7 @@ class Crusher(callbackfs.callback):
 		return self.getPath() + '.crush'
 	def getArguments(self):
 		return None
-	def write(self, path, data, offset, fh):
+	def write(self, data, offset):
 		self.hasBeenWritten = True
 	def crush(self, attempt=0):
 		print('Crushing', self.getPath())
