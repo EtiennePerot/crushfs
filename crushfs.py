@@ -11,10 +11,15 @@ import callbackfs
 class Crusher(callbackfs.callback):
 	enqueue = False
 	crushingProcess = threading.RLock()
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.hasBeenWritten = False
 	def getCrushPath(self):
 		return self.getPath() + '.crush'
 	def getArguments(self):
 		return None
+	def write(self, path, data, offset, fh):
+		self.hasBeenWritten = True
 	def crush(self, attempt=0):
 		print('Crushing', self.getPath())
 		if attempt > 5:
@@ -22,7 +27,6 @@ class Crusher(callbackfs.callback):
 				os.remove(self.getCrushPath())
 			except:
 				pass
-			self.clear()
 			return False
 		p = subprocess.Popen(self.getArguments())
 		result = p.wait()
@@ -35,9 +39,11 @@ class Crusher(callbackfs.callback):
 		os.remove(self.getPath())
 		shutil.move(self.getCrushPath(), self.getPath())
 		print('Successful crush of', self.getPath())
-		self.clear()
 		return True
 	def close(self):
+		if not self.hasBeenWritten:
+			self.clear()
+			return
 		thr = threading.Thread(target=self.crush)
 		if Crusher.enqueue:
 			Crusher.crushingProcess.acquire()
@@ -48,6 +54,8 @@ class Crusher(callbackfs.callback):
 			Crusher.crushingProcess.release()
 		else:
 			thr.start()
+		self.hasBeenWritten = False
+		self.clear()
 		return None
 
 class PNGCrusher(Crusher):
@@ -76,4 +84,9 @@ if __name__ == '__main__':
 	enqueue = '--enqueue' in sys.argv
 	if enqueue:
 		sys.argv.remove('--enqueue')
-	FUSE(crushfs(sys.argv[1], enqueue=enqueue), sys.argv[2], foreground=True)
+	kwargs = {}
+	allow_other = '--allow_other' in sys.argv
+	if allow_other:
+		sys.argv.remove('--allow_other')
+		kwargs['allow_other'] = True
+	FUSE(crushfs(sys.argv[1], enqueue=enqueue), sys.argv[2], foreground=True, **kwargs)
