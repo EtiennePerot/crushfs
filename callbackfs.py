@@ -19,6 +19,17 @@ class callback:
 		return self.path
 	def getPlainPath(self):
 		return loopbackfs.getPlainPath(self.fs, self.path)
+	def getExtension(self):
+		name = os.path.basename(self.path)
+		index = name.find('.')
+		if index == -1:
+			return None
+		return name[index + 1:]
+	def getExtensionLowercase(self):
+		ext = self.getExtension()
+		if ext is not None:
+			ext = ext.lower()
+		return ext
 	def getDirname(self):
 		return self.dirname
 	def clear(self):
