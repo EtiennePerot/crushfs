@@ -9,16 +9,14 @@ class callback:
 	def getFileHandle():
 		callback.fileHandle += 1
 		return callback.fileHandle
-	def __init__(self, fs, path):
-		self.fs = fs
+	def __init__(self, callbackSystem, path):
+		self.callbackSystem = callbackSystem
 		self.path = path
 		self.dirname = os.path.dirname(path)
 		if self.dirname[-1] != os.sep:
 			self.dirname += os.sep
 	def getPath(self):
 		return self.path
-	def getPlainPath(self):
-		return loopbackfs.getPlainPath(self.fs, self.path)
 	def getExtension(self):
 		name = os.path.basename(self.path)
 		index = name.find('.')
@@ -33,7 +31,7 @@ class callback:
 	def getDirname(self):
 		return self.dirname
 	def clear(self):
-		self.fs.clearCallback(self.path)
+		self.callbackSystem.clearCallback(self.path)
 	def create(self):
 		return None
 	def open(self):
@@ -49,9 +47,8 @@ class callback:
 	def write(self, data, offset):
 		return None
 
-class callbackfs(loopbackfs.Loopback):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
+class CallbackSystem:
+	def __init__(self):
 		self.callbacks = {}
 		self.compiledRegexes = {}
 		self.definedCallbacks = {}
@@ -59,8 +56,6 @@ class callbackfs(loopbackfs.Loopback):
 		self.compiledRegexes[regex] = re.compile(regex, regexFlags)
 		self.callbacks[regex] = callbackClass
 	def getCallback(self, path):
-		if os.path.exists(self.root + os.sep + path):
-			return None
 		if path in self.definedCallbacks:
 			return self.definedCallbacks[path]
 		for r in self.callbacks:
@@ -72,6 +67,12 @@ class callbackfs(loopbackfs.Loopback):
 	def clearCallback(self, path):
 		if path in self.definedCallbacks:
 			del self.definedCallbacks[path]
+
+class callbackfs(loopbackfs.Loopback, CallbackSystem):
+	def getCallback(self, path):
+		if os.path.exists(os.path.join(self.root, path)):
+			return None
+		return super.getCallback(self, path)
 	def create(self, path, mode):
 		callback = self.getCallback(path)
 		if callback:
@@ -98,8 +99,9 @@ class callbackfs(loopbackfs.Loopback):
 	def readdir(self, path, fh):
 		allFiles = super().readdir(path, fh)
 		for p in self.definedCallbacks.values():
-			if p.getDirname() == path and p.getPlainPath() not in allFiles:
-				allFiles.append(p.getPlainPath())
+			plainpath = loopbackfs.getPlainPath(self, p.getPath())
+			if p.getDirname() == path and plainpath not in allFiles:
+				allFiles.append(plainpath)
 		return allFiles
 	def truncate(self, path, length, fh=None):
 		callback = self.getCallback(path)
