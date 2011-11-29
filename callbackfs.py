@@ -69,6 +69,9 @@ class CallbackSystem:
 			del self.definedCallbacks[path]
 
 class callbackfs(loopbackfs.Loopback, CallbackSystem):
+	def __init__(self, *args, **kwargs):
+		CallbackSystem.__init__(self)
+		loopbackfs.Loopback.__init__(self, *args, **kwargs)
 	def getCallback(self, path):
 		if os.path.exists(os.path.join(self.root, path)):
 			return None
