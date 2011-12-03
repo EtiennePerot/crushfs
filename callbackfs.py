@@ -75,7 +75,7 @@ class callbackfs(loopbackfs.Loopback, CallbackSystem):
 	def getCallback(self, path):
 		if os.path.exists(os.path.join(self.root, path)):
 			return None
-		return super.getCallback(self, path)
+		return super().getCallback(self, path)
 	def create(self, path, mode):
 		callback = self.getCallback(path)
 		if callback:
