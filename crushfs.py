@@ -108,6 +108,14 @@ class PNGCrusher_pngout(Crusher):
 		highThread.join()
 		result = min(lowThread.getResult(), highThread.getResult())
 		if result:
+			try:
+				os.remove(highPath)
+			except:
+				pass
+			try:
+				os.remove(lowPath)
+			except:
+				pass
 			return (result, None)
 		lowSize = os.path.getsize(lowPath)
 		highSize = os.path.getsize(highPath)
