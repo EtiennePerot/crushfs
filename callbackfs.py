@@ -13,7 +13,7 @@ class callback:
 		self.callbackSystem = callbackSystem
 		self.path = path
 		self.dirname = os.path.dirname(path)
-		if self.dirname[-1] != os.sep:
+		if len(self.dirname) and self.dirname[-1] != os.sep:
 			self.dirname += os.sep
 	def getPath(self):
 		return self.path
