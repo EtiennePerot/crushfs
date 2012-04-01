@@ -3,4 +3,5 @@ backing
 mount
 *.jpg
 *.png
-
+*.pyc
+*.pyo
