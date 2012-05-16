@@ -23,7 +23,7 @@ class Crusher(callbackfs.callback):
 	def write(self, data, offset):
 		self.hasBeenWritten = True
 	def crushSub(self):
-		return (subprocess.Popen(self.getArguments(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait(), self.getCrushPath())
+		return subprocess.Popen(self.getArguments(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait(), self.getCrushPath()
 	def crush(self, attempt=0):
 		print('Crushing', self.getPath())
 		if attempt > 5:
@@ -84,7 +84,7 @@ class PNGCrusher_pngout(Crusher):
 		def getResult(self):
 			return self.result
 		def pngoutCrush(self, blockSize):
-			return 
+			return
 		def run(self):
 			shutil.copyfile(self.parent.getPath(), self.filename)
 			result = 0
@@ -116,7 +116,7 @@ class PNGCrusher_pngout(Crusher):
 				os.remove(lowPath)
 			except:
 				pass
-			return (result, None)
+			return result, None
 		lowSize = os.path.getsize(lowPath)
 		highSize = os.path.getsize(highPath)
 		if lowSize < highSize:
@@ -125,7 +125,25 @@ class PNGCrusher_pngout(Crusher):
 		else:
 			self.bestFile = highPath
 			os.remove(lowPath)
-		return (result, self.bestFile)
+		return result, self.bestFile
+
+class PNGCrusher_pngout_pngcrush(Crusher):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.pngout = PNGCrusher_pngout(*args, **kwargs)
+		self.pngcrush = PNGCrusher_pngcrush(*args, **kwargs)
+	def crushSub(self):
+		result1, bestFile1 = self.pngout.crushSub()
+		if result1:
+			try:
+				os.remove(self.getCrushPath())
+			except:
+				pass
+		else:
+			os.remove(self.getPath())
+			shutil.move(bestFile1, self.getPath())
+		return self.pngcrush.crushSub()
+
 
 class JPEGCrusher(Crusher):
 	arguments = ['jpegtran', '-optimize', '-copy', 'none', '-progressive', '-outfile']
@@ -145,7 +163,9 @@ class crushfs(callbackfs.callbackfs):
 		if 'enqueue' in kwargs:
 			del kwargs['enqueue']
 		super().__init__(*args, **kwargs)
-		if programExists('pngout'):
+		if programExists('pngout') and programExists('pngcrush'):
+			self.addCallback(r'(?<!\.crush)\.png$', PNGCrusher_pngout_pngcrush)
+		elif programExists('pngout'):
 			self.addCallback(r'(?<!\.crush)\.png$', PNGCrusher_pngout)
 		elif programExists('pngcrush'):
 			self.addCallback(r'(?<!\.crush)\.png$', PNGCrusher_pngcrush)

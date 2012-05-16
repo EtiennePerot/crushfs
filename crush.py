@@ -3,7 +3,7 @@
 import os, sys
 import subprocess
 from callbackfs import CallbackSystem
-from crushfs import PNGCrusher_pngcrush, PNGCrusher_pngout, JPEGCrusher, programExists
+from crushfs import PNGCrusher_pngcrush, PNGCrusher_pngout, PNGCrusher_pngout_pngcrush, JPEGCrusher, programExists
 
 if len(sys.argv) < 2:
 	print('Usage:', sys.argv[0], 'file_or_directory_1', 'file_or_directory_2', '...', 'file_or_directory_n')
@@ -17,7 +17,10 @@ for d in paths:
 
 callbackSys = CallbackSystem()
 enabled = False
-if programExists('pngout'):
+if programExists('pngout') and programExists('pngcrush'):
+	callbackSys.addCallback(r'(?<!\.crush)\.png$', PNGCrusher_pngout_pngcrush)
+	enabled = True
+elif programExists('pngout'):
 	callbackSys.addCallback(r'(?<!\.crush)\.png$', PNGCrusher_pngout)
 	enabled = True
 elif programExists('pngcrush'):
