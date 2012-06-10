@@ -144,7 +144,6 @@ class PNGCrusher_pngout_pngcrush(Crusher):
 			shutil.move(bestFile1, self.getPath())
 		return self.pngcrush.crushSub()
 
-
 class JPEGCrusher(Crusher):
 	arguments = ['jpegtran', '-optimize', '-copy', 'none', '-progressive', '-outfile']
 	def getArguments(self):
