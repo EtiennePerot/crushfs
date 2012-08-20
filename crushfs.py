@@ -67,7 +67,7 @@ class Crusher(callbackfs.callback):
 		return None
 
 class PNGCrusher_pngcrush(Crusher):
-	arguments = ['pngcrush', '-q', '-l', '9', '-reduce', '-rem', 'gAMA', '-rem', 'cHRM', '-rem', 'iCCP', '-rem', 'sRGB'] + [i for l in [('-m', str(i)) for i in range(138)] for i in l]
+	arguments = ['pngcrush', '-nolimits', '-fix', '-q', '-l', '9', '-reduce', '-rem', 'gAMA', '-rem', 'cHRM', '-rem', 'iCCP', '-rem', 'sRGB'] + [i for l in [('-m', str(i)) for i in range(138)] for i in l]
 	def getArguments(self):
 		return PNGCrusher_pngcrush.arguments + [self.getPath(), self.getCrushPath()]
 
@@ -95,10 +95,12 @@ class PNGCrusher_pngout(Crusher):
 			result = 0
 			originalLength = len(self.queue)
 			while len(self.queue):
-				result = subprocess.Popen(PNGCrusher_pngout.arguments + ['-b' + str(self.queue.pop(0)), self.filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait()
+				arguments = PNGCrusher_pngout.arguments + ['-b' + str(self.queue.pop(0)), self.filename]
+				#print('Running', ' '.join(arguments))
+				result = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait()
 				if result:
 					if len(self.queue) == originalLength - 1:
-						self.result = result # Failrue at first try
+						self.result = result # Failure at first try
 					else:
 						self.result = 0
 					return
@@ -144,7 +146,7 @@ class PNGCrusher_pngout_pngcrush(Crusher):
 				os.remove(self.getCrushPath())
 			except:
 				pass
-		else:
+		elif os.path.isfile(bestFile1):
 			os.remove(self.getPath())
 			shutil.move(bestFile1, self.getPath())
 		return self.pngcrush.crushSub()
