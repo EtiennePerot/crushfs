@@ -23,7 +23,9 @@ class Crusher(callbackfs.callback):
 	def write(self, data, offset):
 		self.hasBeenWritten = True
 	def crushSub(self):
-		return subprocess.Popen(self.getArguments(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait(), self.getCrushPath()
+		arguments = self.getArguments()
+		#print('Running:', ' '.join(arguments))
+		return subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE).wait(), self.getCrushPath()
 	def crush(self, attempt=0):
 		print('Crushing', self.getPath())
 		if attempt > 5:
@@ -39,6 +41,9 @@ class Crusher(callbackfs.callback):
 			except:
 				pass
 			return self.crush(attempt + 1)
+		if not os.path.isfile(bestFile):
+			print('Returned successful crush, but resulting file was not found! Aborting.')
+			return False
 		os.remove(self.getPath())
 		shutil.move(bestFile, self.getPath())
 		print('Successful crush of', self.getPath())
